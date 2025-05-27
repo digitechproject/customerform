@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Questionnaire Client - Phase 1</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            animation: slideIn 0.8s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(255,255,255,0.05) 10px,
+                rgba(255,255,255,0.05) 20px
+            );
+            animation: shimmer 20s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
+        }
+
+        .form-container {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 30px;
+            border-radius: 15px;
+            background: linear-gradient(145deg, #f8f9ff 0%, #e8f0ff 100%);
+            border-left: 5px solid #4facfe;
+            transition: all 0.3s ease;
+        }
+
+        .section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(79, 172, 254, 0.15);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-number {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .question {
+            margin-bottom: 25px;
+            opacity: 0;
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+
+        .question:nth-child(odd) { animation-delay: 0.1s; }
+        .question:nth-child(even) { animation-delay: 0.2s; }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .question-label {
+            font-weight: 600;
+            color: #34495e;
+            margin-bottom: 8px;
+            display: block;
+            font-size: 1.05rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+            resize: vertical;
+            min-height: 50px;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+            transform: translateY(-1px);
+        }
+
+        textarea.form-control {
+            min-height: 100px;
+            font-family: inherit;
+        }
+
+        .btn-container {
+            text-align: center;
+            margin-top: 40px;
+            padding: 30px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(79, 172, 254, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e1e8ed;
+            border-radius: 3px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 3px;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .header {
+                padding: 30px 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .form-container {
+                padding: 20px;
+            }
+            
+            .section {
+                padding: 20px;
+                margin-bottom: 25px;
+            }
+        }
+
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.9);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4facfe;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>📋 Questionnaire Client</h1>
+            <p>Phase 1 - Vision, Positionnement & Cahier des charges</p>
+        </div>
+
+        <div class="form-container">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <form id="clientForm">
+                <!-- Section 1: Vision, mission & positionnement -->
+                <div class="section">
+                    <h2 class="section-title">
+                        <span class="section-number">1</span>
+                        Vision, mission & positionnement
+                    </h2>
+                    
+                    <div class="question">
+                        <label class="question-label">Quelle est la mission de votre future plateforme ?</label>
+                        <textarea class="form-control" name="mission" placeholder="Ex. Permettre à la diaspora africaine d'envoyer de l'argent rapidement et à moindre coût..."></textarea>
+                    </div>
+
+                    <div class="question">
+                        <label class="question-label">Quel impact souhaitez-vous avoir sur vos utilisateurs ou sur le marché ?</label>
+                        <textarea class="form-control" name="impact" placeholder="Ex. fluidifier les transferts intra-africains, renforcer l'inclusion financière..."></textarea>
+                    </div>
+
+                    <div class="question">
+                        <label class="question-label">Quels sont vos trois principales valeurs ?</label>
+                        <input type="text" class="form-control" name="valeurs" placeholder="Ex. transparence, fiabilité, simplicité">
+                    </div>
+
+                    <div class="question">
+                        <label class="question-label">Comment voudriez-vous que vos clients décrivent votre service en une phrase ?</label>
+                        <textarea class="form-control" name="description_clients"></textarea>
+                    </div>
+
+                    <div class="question">
+                        <label class="question-label">En quoi votre offre se distingue-t-elle des acteurs existants ?</label>
+                        <textarea class="form-control" name="differentiation" placeholder="Comparaison avec Onafriq, TerraPay, etc."></textarea>
+                    </div>
+                </div>
+
+                <!-- Section 2: Problèmes & besoins utilisateurs -->
+                <div class="section">
+                    <h2 class="section-title">
+                        <span class="section-number">2</span>
+                        Problèmes & besoins utilisateurs
+                    </h2>
+
+                    <div class="question">
+                        <label class="question-label">Quels sont les problèmes majeurs rencontrés aujourd'hui par vos utilisateurs ?</label>
+                        <textarea class="form-control" name="problemes_majeurs" placeholder="Listez les freins, coûts, lenteurs, manque de clarté, etc."></textarea>
+                    </div>
+
+                    <div class="question">
+                        <label class="question-label">Quels sont les besoins essentiels que votre plateforme doit impérativement couvrir ?</label>
+                        <textarea class="form-control" name="besoins_essentiels" placeholder="Ex. suivi en temps réel, coût prévisible, interface mobile-first, support multilingue..."></textarea>
+                    </div>
+
+                    <div class="question">
+                        <label class="question-label">Qui sont vos utilisateurs cibles ?</label>
+                        <textarea class="form-control" name="utilisateurs_cibles" placeholder="Profil socio-démographique, diaspora, micro-entrepreneurs, etc."></textarea>
+                    </div>
+
+                    <div class="question">
+                        <label class="question-label">Avez-vous déjà recueilli des retours ou interviews utilisateurs sur des solutions existantes ?</label>
+                        <textarea class="form-control" name="retours_utilisateurs"></textarea>
+                    </div>
+                </div>
+
+                <!-- Section 3: Cahier des charges fonctionnel -->
+                <div class="section">
+                    <h2 class="section-title">
+                        <span class="section-number">3</span>
+                        Cahier des charges fonctionnel
+                    </h2>
+
+                    <div class="question">
+                        <label class="question-label">Quelles fonctionnalités "de base" doit contenir la V1 de la plateforme ?</label>
+                        <textarea class="form-control" name="fonctionnalites_base" placeholder="Ex. création de compte, top-up, envoi, réception, historique, notifications..."></textarea>
+                    </div>
+
+                    <div class="question">
+                        <label class="question-label">Y a-t-il des contraintes réglementaires ou métier à prendre en compte ?</label>
+                        <textarea class="form-control" name="contraintes_reglementaires" placeholder="KYC, plafond, géolocalisation..."></textarea>
+                    </div>
+
+                    <div class="question">
+                        <label class="question-label">Quelles langues l'interface devra-t-elle proposer au lancement ?</label>
+                        <input type="text" class="form-control" name="langues" placeholder="Ex. Français, Anglais, Arabe...">
+                    </div>
+
+                    <div class="question">
+                        <label class="question-label">Quels devices cibler en priorité ?</label>
+                        <input type="text" class="form-control" name="devices" placeholder="desktop, mobile web, tablette, version PWA...">
+                    </div>
+
+                    <div class="question">
+                        <label class="question-label">Quels modules annexes souhaitez-vous prévoir dès la V1 ?</label>
+                        <textarea class="form-control" name="modules_annexes" placeholder="ex. FAQ intégrée, chat-bot, blog, espace partenaires..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Section 4: Naming & principes de marque -->
+                <div class="section">
+                    <h2 class="section-title">
+                        <span class="section-number">4</span>
+                        Naming & principes de marque
+                    </h2>
+
+                    <div class="question">
+                        <label class="question-label">Avez-vous des pistes de noms ou des thèmes que vous souhaitez explorer ?</label>
+                        <textarea class="form-control" name="pistes_noms" placeholder="mot-clé, racine, acronyme, langue locale, etc."></textarea>
+                    </div>
+
+                    <div class="question">
+                        <label class="question-label">Quels sentiments ou valeurs le nom doit-il évoquer ?</label>
+                        <input type="text" class="form-control" name="sentiments_nom" placeholder="sécurité, rapidité, modernité, proximité...">
+                    </div>
+
+                    <div class="question">
+                        <label class="question-label">Préfériez-vous un nom court et mémorisable ou un nom plus évocateur/descriptif ?</label>
+                        <textarea class="form-control" name="type_nom"></textarea>
+                    </div>
+                </div>
+
+                <!-- Section 5: Identité visuelle -->
+                <div class="section">
+                    <h2 class="section-title">
+                        <span class="section-number">5</span>
+                        Identité visuelle
+                    </h2>
+
+                    <div class="question">
+                        <label class="question-label">Quelles couleurs vous semblent alignées avec votre positionnement ?</label>
+                        <textarea class="form-control" name="couleurs" placeholder="ex. teintes chaudes pour la convivialité, tons bleus pour la confiance..."></textarea>
+                    </div>
+
+                    <div class="question">
+                        <label class="question-label">Avez-vous des exemples de logos / chartes graphiques que vous appréciez ? Pourquoi ?</label>
+                        <textarea class="form-control" name="exemples_logos"></textarea>
+                    </div>
+
+                    <div class="question">
+                        <label class="question-label">Quelle typographie vous paraît la plus adaptée ?</label>
+                        <textarea class="form-control" name="typographie" placeholder="plutôt serif / sans-serif / script ? Formelle ou décontractée..."></textarea>
+                    </div>
+
+                    <div class="question">
+                        <label class="question-label">Souhaitez-vous un motif ou un univers graphique spécifique ?</label>
+                        <textarea class="form-control" name="univers_graphique" placeholder="géométrique, organique, iconographique, etc."></textarea>
+                    </div>
+                </div>
+
+                <!-- Section 6: Landing Page -->
+                <div class="section">
+                    <h2 class="section-title">
+                        <span class="section-number">6</span>
+                        Landing Page
+                    </h2>
+
+                    <div class="question">
+                        <label class="question-label">Quel message-clé doit apparaître immédiatement en haut de la page d'accueil ?</label>
+                        <textarea class="form-control" name="message_cle" placeholder="headline + sous-titre"></textarea>
+                    </div>
+
+                    <div class="question">
+                        <label class="question-label">Quelles rubriques prioritaires voulez-vous afficher ?</label>
+                        <textarea class="form-control" name="rubriques_prioritaires" placeholder="tarifs, témoignages, cas d'usage, aperçu de l'app, call-to-action..."></textarea>
+                    </div>
+
+                    <div class="question">
+                        <label class="question-label">Avez-vous du contenu existant à intégrer dès la V1 ?</label>
+                        <textarea class="form-control" name="contenu_existant" placeholder="textes, photos, vidéos, témoignages"></textarea>
+                    </div>
+
+                    <div class="question">
+                        <label class="question-label">Quel ton / style souhaitez-vous employer sur le site ?</label>
+                        <input type="text" class="form-control" name="ton_style" placeholder="convivial, corporate, technique, storytelling...">
+                    </div>
+                </div>
+
+                <div class="btn-container">
+                    <button type="submit" class="btn">
+                        📄 Générer le PDF
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">
+        ✅ PDF généré avec succès !
+    </div>
+
+    <script>
+        // Variables globales
+        const form = document.getElementById('clientForm');
+        const progressFill = document.getElementById('progressFill');
+        const loading = document.getElementById('loading');
+        const toast = document.getElementById('toast');
+
+        // Mise à jour de la barre de progression
+        function updateProgress() {
+            const inputs = form.querySelectorAll('input, textarea');
+            const filledInputs = Array.from(inputs).filter(input => input.value.trim() !== '');
+            const progress = (filledInputs.length / inputs.length) * 100;
+            progressFill.style.width = progress + '%';
+        }
+
+        // Écouteurs d'événements pour la progression
+        form.addEventListener('input', updateProgress);
+
+        // Affichage du toast
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Génération du PDF
+        async function generatePDF(formData) {
+            loading.style.display = 'flex';
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Configuration
+            const pageWidth = doc.internal.pageSize.width;
+            const margin = 20;
+            const maxWidth = pageWidth - 2 * margin;
+            let y = 30;
+
+            // Fonction pour ajouter du texte avec retour à la ligne
+            function addText(text, fontSize = 12, isBold = false) {
+                doc.setFontSize(fontSize);
+                doc.setFont(undefined, isBold ? 'bold' : 'normal');
+                
+                const lines = doc.splitTextToSize(text, maxWidth);
+                
+                // Vérifier si on dépasse la page
+                if (y + (lines.length * fontSize * 0.5) > doc.internal.pageSize.height - margin) {
+                    doc.addPage();
+                    y = margin;
+                }
+                
+                doc.text(lines, margin, y);
+                y += lines.length * fontSize * 0.5 + 5;
+            }
+
+            // En-tête du PDF
+            doc.setFillColor(79, 172, 254);
+            doc.rect(0, 0, pageWidth, 40, 'F');
+            doc.setTextColor(255, 255, 255);
+            addText('QUESTIONNAIRE CLIENT - PHASE 1', 20, true);
+            addText('Vision, Positionnement & Cahier des charges', 14);
+            
+            y += 10;
+            doc.setTextColor(0, 0, 0);
+
+            // Date de génération
+            const now = new Date();
+            addText(`Date de génération: ${now.toLocaleDateString('fr-FR')} à ${now.toLocaleTimeString('fr-FR')}`, 10);
+            y += 10;
+
+            // Sections du questionnaire
+            const sections = [
+                {
+                    title: '1. VISION, MISSION & POSITIONNEMENT',
+                    questions: [
+                        { label: 'Mission de la plateforme', name: 'mission' },
+                        { label: 'Impact souhaité', name: 'impact' },
+                        { label: 'Trois principales valeurs', name: 'valeurs' },
+                        { label: 'Description par les clients', name: 'description_clients' },
+                        { label: 'Différenciation concurrentielle', name: 'differentiation' }
+                    ]
+                },
+                {
+                    title: '2. PROBLÈMES & BESOINS UTILISATEURS',
+                    questions: [
+                        { label: 'Problèmes majeurs des utilisateurs', name: 'problemes_majeurs' },
+                        { label: 'Besoins essentiels à couvrir', name: 'besoins_essentiels' },
+                        { label: 'Utilisateurs cibles', name: 'utilisateurs_cibles' },
+                        { label: 'Retours utilisateurs existants', name: 'retours_utilisateurs' }
+                    ]
+                },
+                {
+                    title: '3. CAHIER DES CHARGES FONCTIONNEL',
+                    questions: [
+                        { label: 'Fonctionnalités de base V1', name: 'fonctionnalites_base' },
+                        { label: 'Contraintes réglementaires', name: 'contraintes_reglementaires' },
+                        { label: 'Langues de l\'interface', name: 'langues' },
+                        { label: 'Devices prioritaires', name: 'devices' },
+                        { label: 'Modules annexes V1', name: 'modules_annexes' }
+                    ]
+                },
+                {
+                    title: '4. NAMING & PRINCIPES DE MARQUE',
+                    questions: [
+                        { label: 'Pistes de noms', name: 'pistes_noms' },
+                        { label: 'Sentiments évoqués par le nom', name: 'sentiments_nom' },
+                        { label: 'Type de nom préféré', name: 'type_nom' }
+                    ]
+                },
+                {
+                    title: '5. IDENTITÉ VISUELLE',
+                    questions: [
+                        { label: 'Couleurs alignées', name: 'couleurs' },
+                        { label: 'Exemples de logos appréciés', name: 'exemples_logos' },
+                        { label: 'Typographie adaptée', name: 'typographie' },
+                        { label: 'Univers graphique souhaité', name: 'univers_graphique' }
+                    ]
+                },
+                {
+                    title: '6. LANDING PAGE',
+                    questions: [
+                        { label: 'Message-clé de la page d\'accueil', name: 'message_cle' },
+                        { label: 'Rubriques prioritaires', name: 'rubriques_prioritaires' },
+                        { label: 'Contenu existant à intégrer', name: 'contenu_existant' },
+                        { label: 'Ton et style du site', name: 'ton_style' }
+                    ]
+                }
+            ];
+
+            // Génération du contenu
+            sections.forEach(section => {
+                // Titre de section
+                doc.setFillColor(240, 248, 255);
+                doc.rect(margin - 5, y - 5, maxWidth + 10, 15, 'F');
+                addText(section.title, 16, true);
+                y += 5;
+
+                // Questions de la section
+                section.questions.forEach(question => {
+                    addText(`${question.label}:`, 12, true);
+                    const answer = formData.get(question.name) || 'Non renseigné';
+                    addText(answer, 11);
+                    y += 5;
+                });
+
+                y += 10;
+            });
+
+            // Pied de page
+            const totalPages = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(128, 128, 128);
+                doc.text(`Page ${i}/${totalPages}`, pageWidth - 30, doc.internal.pageSize.height - 10);
+                doc.text('Questionnaire Client - Phase 1', margin, doc.internal.pageSize.height - 10);
+            }
+
+            // Sauvegarde
+            const fileName = `Questionnaire_Client_${now.toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+
+            loading.style.display = 'none';
+            showToast('✅ PDF généré avec succès !');
+        }
+
+        // Gestionnaire de soumission du formulaire
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(form);
+            
+            // Vérification qu'au moins quelques champs sont remplis
+            const filledFields = Array.from(formData.values()).filter(value => value.trim() !== '').length;
+            
+            if (filledFields < 5) {
+                showToast('⚠️ Veuillez remplir au moins 5 champs avant de générer le PDF');
+                return;
+            }
+
+            try {
+                await generatePDF(formData);
+            } catch (error) {
+                console.error('Erreur lors de la génération du PDF:', error);
+                loading.style.display = 'none';
+                showToast('❌ Erreur lors de la génération du PDF');
+            }
+        });
+
+        // Animation au chargement
+        window.addEventListener('load', () => {
+            const questions = document.querySelectorAll('.question');
+            questions.forEach((question, index) => {
+                setTimeout(() => {
+                    question.style.opacity = '1';
+                    question.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+
+        // Initialisation
+        updateProgress();
+    </script>
+</body>
+</html>
